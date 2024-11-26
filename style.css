@@ -1,0 +1,81 @@
+/* Card styling */
+.add-button {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-button:hover {
+  fill: #d50000;
+}
+
+image {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+image:hover {
+  transform: translateY(-8px);
+}
+
+/* Team styling */
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.position-label {
+  fill: #04bc88;
+  font-size: 14px;
+  font-weight: bold;
+  font-family: "Poppins", sans-serif;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.role-label {
+  fill: white;
+  font-size: 12px;
+  font-family: "Poppins", sans-serif;
+  font-weight: 500;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+g:hover image {
+  transform: translateY(-8px);
+}
+
+g image {
+  transition: transform 0.2s ease;
+}
+
+g {
+  transition: transform 0.2s ease;
+}
+
+g:hover {
+  transform: translateY(-8px);
+}
+
+g:hover .position-label {
+  fill: white;
+  transition: fill 0.2s ease;
+}
+
+g:hover .role-label {
+  fill: #04bc88;
+  transition: fill 0.2s ease;
+}
+
+text {
+  z-index: 10;
+}
+
+svg text {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
