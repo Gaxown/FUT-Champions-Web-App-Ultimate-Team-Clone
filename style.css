@@ -47,11 +47,6 @@
   z-index: 2;
 }
 
-.filled-card.dragging {
-  opacity: 0.5;
-  cursor: grabbing;
-}
-
 .filled-card:hover {
   transform: translate(-50%, -50%) scale(1.1);
 }
@@ -137,11 +132,29 @@
 }
 
 .valid-position {
-  box-shadow: 0 0 20px rgba(4, 188, 136, 0.7);
+  border: 2px solid #04bc88 !important;
+  box-shadow: 0 0 15px rgba(4, 188, 136, 0.5) !important;
 }
 
 .invalid-position {
-  box-shadow: 0 0 20px rgba(255, 0, 0, 0.7);
+  border: 2px solid #ff4444 !important;
+  box-shadow: 0 0 15px rgba(255, 68, 68, 0.5) !important;
+}
+
+.warning-position {
+  animation: warningPulse 2s ease-in-out;
+}
+
+@keyframes warningPulse {
+  0%,
+  100% {
+    border-color: transparent;
+    box-shadow: none;
+  }
+  50% {
+    border: 2px solid #ffa500;
+    box-shadow: 0 0 15px rgba(255, 165, 0, 0.5);
+  }
 }
 
 #player-details {
@@ -171,11 +184,6 @@
 .player-dataset-card:hover {
   transform: scale(1.05);
   z-index: 10;
-}
-
-.dragging {
-  opacity: 0.5;
-  cursor: grabbing;
 }
 
 #pitch-svg {
@@ -333,4 +341,26 @@
   opacity: 1;
   transform: translate(-50%, -50%) scale(1.1);
   box-shadow: 0 0 20px rgba(4, 188, 136, 0.7);
+}
+
+.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.drag-over {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.player-card {
+  /* Add to existing player-card styles */
+  cursor: grab;
+}
+
+.player-card.dragging {
+  cursor: grabbing;
+}
+
+.empty-card.drag-over {
+  border: 2px dashed #04bc88;
 }

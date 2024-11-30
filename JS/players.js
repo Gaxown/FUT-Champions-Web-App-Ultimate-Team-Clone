@@ -69,17 +69,6 @@ function createPlayerCard(player) {
     </div>
   `;
 
-  // Add drag functionality
-  card.setAttribute("draggable", true);
-  card.addEventListener("dragstart", (e) => {
-    e.dataTransfer.setData("text/plain", JSON.stringify(player));
-    e.target.classList.add("dragging");
-  });
-
-  card.addEventListener("dragend", (e) => {
-    e.target.classList.remove("dragging");
-  });
-
   card.addEventListener("click", () => showPlayerDetails(player));
   return card;
 }

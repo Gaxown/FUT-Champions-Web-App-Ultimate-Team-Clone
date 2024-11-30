@@ -144,6 +144,8 @@ function createCard(x, y, position, role, id) {
   card.setAttribute("data-role", role);
   card.setAttribute("data-position-id", id);
 
+  card.setAttribute("draggable", true);
+
   card.style.left = x;
   card.style.top = y;
 
@@ -152,24 +154,158 @@ function createCard(x, y, position, role, id) {
     <div class="role-label">${role}</div>
   `;
 
-  card.addEventListener("click", () =>
-    showPlayerSelectionModal(position, role, id)
-  );
+  card.addEventListener("click", () => {
+    if (card.classList.contains("empty-card")) {
+      showPlayerSelectionModal(position, role, id);
+    }
+  });
+
+  card.addEventListener("dragstart", handleDragStart);
+  card.addEventListener("dragend", handleDragEnd);
   card.addEventListener("dragover", handleDragOver);
-  card.addEventListener("dragleave", handleDragLeave);
   card.addEventListener("drop", handleDrop);
 
   return card;
 }
 
+function handleDragStart(e) {
+  if (!e.target.classList.contains("filled-card")) return;
+  e.target.classList.add("dragging");
+  const positionId = e.target.getAttribute("data-position-id");
+  const playerName = selectedPlayers[positionId];
+  e.dataTransfer.setData(
+    "text/plain",
+    JSON.stringify({
+      positionId: positionId,
+      playerName: playerName,
+    })
+  );
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  const dropTarget = e.target.closest(".player-card");
+  if (!dropTarget) return;
+
+  // Get dragged player data
+  const draggedCard = document.querySelector(".dragging");
+  if (!draggedCard) return;
+
+  const draggedPlayerId = draggedCard.getAttribute("data-position-id");
+  const draggedPlayerName = selectedPlayers[draggedPlayerId];
+  const player = playerManager.players.find(
+    (p) => p.name === draggedPlayerName
+  );
+
+  // Check if position is valid and add appropriate visual feedback
+  const targetPosition = dropTarget.getAttribute("data-position");
+  const isValidPos = isValidPosition(player, targetPosition);
+
+  dropTarget.classList.add("drag-over");
+  dropTarget.classList.toggle("valid-position", isValidPos);
+  dropTarget.classList.toggle("invalid-position", !isValidPos);
+}
+
+function handleDragEnd(e) {
+  e.target.classList.remove("dragging");
+  // Remove all drag-over effects
+  document
+    .querySelectorAll(".drag-over, .valid-position, .invalid-position")
+    .forEach((el) => {
+      el.classList.remove("drag-over", "valid-position", "invalid-position");
+    });
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  const dropTarget = e.target.closest(".player-card");
+  if (!dropTarget) return;
+
+  dropTarget.classList.remove(
+    "drag-over",
+    "valid-position",
+    "invalid-position"
+  );
+
+  const dragData = JSON.parse(e.dataTransfer.getData("text/plain"));
+  const oldPositionId = dragData.positionId;
+  const newPositionId = dropTarget.getAttribute("data-position-id");
+  const playerName = dragData.playerName;
+
+  // Get the player data
+  const player = playerManager.players.find((p) => p.name === playerName);
+  if (!player) return;
+
+  const newPosition = dropTarget.getAttribute("data-position");
+  const isValidPos = isValidPosition(player, newPosition);
+
+  // Check if target position is already occupied
+  const targetPlayerName = selectedPlayers[newPositionId];
+  if (targetPlayerName) {
+    // Swap players
+    const targetPlayer = playerManager.players.find(
+      (p) => p.name === targetPlayerName
+    );
+    const oldCard = document.querySelector(
+      `[data-position-id="${oldPositionId}"]`
+    );
+
+    // Update localStorage
+    updatePlayerPosition(targetPlayerName, oldPositionId);
+    updatePlayerPosition(playerName, newPositionId);
+
+    // Update visual cards
+    updateCardWithPlayer(
+      oldCard,
+      targetPlayer,
+      oldCard.getAttribute("data-position"),
+      oldCard.getAttribute("data-role")
+    );
+    updateCardWithPlayer(
+      dropTarget,
+      player,
+      newPosition,
+      dropTarget.getAttribute("data-role")
+    );
+
+    // Add visual feedback for invalid position
+    if (!isValidPos) {
+      dropTarget.classList.add("warning-position");
+      setTimeout(() => dropTarget.classList.remove("warning-position"), 2000);
+    }
+  } else {
+    // Move player to empty position
+    removePlayerFromPosition(oldPositionId);
+    updatePlayerPosition(playerName, newPositionId);
+
+    // Clear old position
+    const oldCard = document.querySelector(
+      `[data-position-id="${oldPositionId}"]`
+    );
+    oldCard.className = "player-card empty-card";
+    oldCard.innerHTML = `
+      <div class="position-label">${oldCard.getAttribute("data-position")}</div>
+      <div class="role-label">${oldCard.getAttribute("data-role")}</div>
+    `;
+
+    // Update new position
+    updateCardWithPlayer(
+      dropTarget,
+      player,
+      newPosition,
+      dropTarget.getAttribute("data-role")
+    );
+
+    // Add visual feedback for invalid position
+    if (!isValidPos) {
+      dropTarget.classList.add("warning-position");
+      setTimeout(() => dropTarget.classList.remove("warning-position"), 2000);
+    }
+  }
+}
+
 function updateCardWithPlayer(card, player, position, role) {
   const isGoalkeeper = position === "GK";
-
-  card.setAttribute("draggable", true);
-  card.addEventListener("dragstart", handleDragStart);
-  card.addEventListener("dragend", handleDragEnd);
-  card.addEventListener("dragover", handleDragOver);
-  card.addEventListener("drop", handleDrop);
 
   card.innerHTML = `
     <div class="card-content">
@@ -312,51 +448,6 @@ const positionMappings = {
   },
 };
 
-function handleDrop(e) {
-  e.preventDefault();
-  const targetCard = e.target.closest(".player-card");
-  if (!targetCard) return;
-
-  const sourceData = JSON.parse(e.dataTransfer.getData("text/plain"));
-  const sourcePositionId = sourceData.positionId;
-  const targetPositionId = targetCard.getAttribute("data-position-id");
-
-  if (
-    !sourcePositionId ||
-    !targetPositionId ||
-    sourcePositionId === targetPositionId
-  )
-    return;
-
-  const sourceCard = document.querySelector(
-    `[data-position-id="${sourcePositionId}"]`
-  );
-  if (!sourceCard) return;
-
-  const sourceName = selectedPlayers[sourcePositionId];
-  const targetName = selectedPlayers[targetPositionId];
-  const players = JSON.parse(localStorage.getItem("players") || "[]");
-
-  if (sourceName) {
-    const sourcePlayer = players.find((p) => p.name === sourceName);
-    if (sourcePlayer) {
-      updateCardWithPlayer(targetCard, sourcePlayer, targetPositionId);
-      updatePlayerPosition(sourceName, targetPositionId);
-    }
-  }
-
-  if (targetName) {
-    const targetPlayer = players.find((p) => p.name === targetName);
-    if (targetPlayer) {
-      updateCardWithPlayer(sourceCard, targetPlayer, sourcePositionId);
-      updatePlayerPosition(targetName, sourcePositionId);
-    }
-  } else {
-    resetToEmptyCard(sourceCard);
-    removePlayerFromPosition(sourcePositionId);
-  }
-}
-
 function updateFormation(newFormation) {
   const oldFormation = currentFormation;
   currentFormation = newFormation;
@@ -418,39 +509,35 @@ document.addEventListener("DOMContentLoaded", function () {
   updateFormation(currentFormation);
 });
 
-function showPlayerSelectionModal(position, role) {
-  const players = JSON.parse(localStorage.getItem("players") || "[]");
-  const isGoalkeeper = position === "GK";
-
+function showPlayerSelectionModal(position, role, positionId) {
   const modal = document.createElement("div");
   modal.className =
     "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
 
+  const players = JSON.parse(localStorage.getItem("players") || "[]");
+  const availablePlayers = players.filter((player) =>
+    isValidPosition(player, position)
+  );
+
   modal.innerHTML = `
-    <div class="bg-[#1a1a1a] p-6 rounded-lg w-full max-w-[90vw] max-h-[90vh] overflow-y-auto modal-content">
+    <div class="bg-[#1a1a1a] p-6 rounded-lg w-[90%] max-w-4xl max-h-[80vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
-        <div>
-          <h2 class="text-white text-xl font-bold">Select Player for ${position}</h2>
-          <p class="text-gray-400 text-sm">Role: ${role}</p>
-        </div>
+        <h2 class="text-white text-xl font-bold">Select Player for ${position}</h2>
         <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
-      
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        ${players
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        ${availablePlayers
           .map(
             (player) => `
-          <div class="player-dataset-card relative w-[200px] h-[300px] cursor-pointer ${
-            !isValidPosition(player, position) ? "opacity-50" : ""
-          }"
-               onclick="selectPlayerForPosition('${
-                 player.name
-               }', '${position}', '${role}')">
-            <div class="relative w-full h-full" style="background-image: url('../src/img/badge_gold.webp'); background-size: auto; background-repeat: no-repeat; background-position: center;">
+          <div class="cursor-pointer" onclick="selectPlayerForPosition('${
+            player.name
+          }', '${position}', '${role}', '${positionId}')">
+            <!-- Player card HTML -->
+            <div class="relative w-full h-[300px]" style="background-image: url('../src/img/badge_gold.webp'); background-size: auto; background-repeat: no-repeat; background-position: center;">
               <!-- Rating & Position -->
               <div class="absolute top-[10%] left-[12%] text-[2rem] font-bold text-black">
                 ${player.rating}
@@ -475,45 +562,7 @@ function showPlayerSelectionModal(position, role) {
 
               <!-- Stats -->
               <div class="absolute bottom-[14%] left-[3%] right-[3%] text-[0.8rem] text-black font-medium">
-                ${
-                  isGoalkeeper
-                    ? `
-                  <div class="flex justify-between">
-                    <span>DIV</span>
-                    <span>HAN</span>
-                    <span>KIC</span>
-                    <span>REF</span>
-                    <span>SPE</span>
-                    <span>POS</span>
-                  </div>
-                  <div class="flex justify-between font-bold">
-                    <span>${player.skills.diving}</span>
-                    <span>${player.skills.handling}</span>
-                    <span>${player.skills.kicking}</span>
-                    <span>${player.skills.reflexes}</span>
-                    <span>${player.skills.speed}</span>
-                    <span>${player.skills.positioning}</span>
-                  </div>
-                `
-                    : `
-                  <div class="flex justify-between">
-                    <span>PAC</span>
-                    <span>SHO</span>
-                    <span>PAS</span>
-                    <span>DRI</span>
-                    <span>DEF</span>
-                    <span>PHY</span>
-                  </div>
-                  <div class="flex justify-between font-bold">
-                    <span>${player.skills.pace}</span>
-                    <span>${player.skills.shooting}</span>
-                    <span>${player.skills.passing}</span>
-                    <span>${player.skills.dribbling}</span>
-                    <span>${player.skills.defending}</span>
-                    <span>${player.skills.physical}</span>
-                  </div>
-                `
-                }
+                ${getPlayerStats(player)}
               </div>
 
               <!-- Country & Club Icons -->
@@ -537,39 +586,61 @@ function showPlayerSelectionModal(position, role) {
   document.body.appendChild(modal);
 }
 
-function selectPlayerForPosition(playerName, position, role) {
+function getPlayerStats(player) {
+  const isGoalkeeper = player.position === "GK";
+
+  if (isGoalkeeper) {
+    return `
+      <div class="flex justify-between">
+        <span>DIV</span>
+        <span>HAN</span>
+        <span>KIC</span>
+        <span>REF</span>
+        <span>SPE</span>
+        <span>POS</span>
+      </div>
+      <div class="flex justify-between font-bold">
+        <span>${player.skills.diving}</span>
+        <span>${player.skills.handling}</span>
+        <span>${player.skills.kicking}</span>
+        <span>${player.skills.reflexes}</span>
+        <span>${player.skills.speed}</span>
+        <span>${player.skills.positioning}</span>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="flex justify-between">
+      <span>PAC</span>
+      <span>SHO</span>
+      <span>PAS</span>
+      <span>DRI</span>
+      <span>DEF</span>
+      <span>PHY</span>
+    </div>
+    <div class="flex justify-between font-bold">
+      <span>${player.skills.pace}</span>
+      <span>${player.skills.shooting}</span>
+      <span>${player.skills.passing}</span>
+      <span>${player.skills.dribbling}</span>
+      <span>${player.skills.defending}</span>
+      <span>${player.skills.physical}</span>
+    </div>
+  `;
+}
+
+function selectPlayerForPosition(playerName, position, role, positionId) {
   const players = JSON.parse(localStorage.getItem("players") || "[]");
   const player = players.find((p) => p.name === playerName);
-  const card = document.querySelector(`[data-position="${position}"]`);
+  const card = document.querySelector(`[data-position-id="${positionId}"]`);
 
   if (player && card) {
     updateCardWithPlayer(card, player, position, role);
-    updatePlayerPosition(player.name, position);
+    updatePlayerPosition(player.name, positionId);
   }
 
   document.querySelector(".fixed").remove();
-}
-
-function handleDragStart(e) {
-  const card = e.target.closest(".player-card");
-  if (!card || !card.classList.contains("filled-card")) return;
-
-  card.classList.add("dragging");
-  e.dataTransfer.setData(
-    "text/plain",
-    JSON.stringify({
-      position: card.getAttribute("data-position"),
-      role: card.getAttribute("data-role"),
-      positionId: card.getAttribute("data-position-id"),
-    })
-  );
-}
-
-function handleDragEnd(e) {
-  document.querySelectorAll(".player-card").forEach((card) => {
-    card.classList.remove("drag-over");
-    card.classList.remove("dragging");
-  });
 }
 
 function resetToEmptyCard(card, position, role) {
@@ -588,20 +659,4 @@ function resetToEmptyCard(card, position, role) {
   });
 
   card.parentNode.replaceChild(newCard, card);
-}
-
-function handleDragOver(e) {
-  e.preventDefault();
-  const targetCard = e.target.closest(".player-card");
-  if (targetCard) {
-    e.dataTransfer.dropEffect = "move";
-    targetCard.classList.add("drag-over");
-  }
-}
-
-function handleDragLeave(e) {
-  const targetCard = e.target.closest(".player-card");
-  if (targetCard) {
-    targetCard.classList.remove("drag-over");
-  }
 }

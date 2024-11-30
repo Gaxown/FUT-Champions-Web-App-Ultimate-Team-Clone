@@ -4,11 +4,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Player Card</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .player-dataset-card {
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .player-dataset-card:hover {
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+            transform: scale(1.05);
+        }
+    </style>
 </head>
 
-<body>
+<body class="min-h-screen flex items-center justify-center bg-gray-900 p-4">
+    <!-- Card Container -->
+    <div
+        class="player-dataset-card relative w-[200px] h-[300px] cursor-pointer hover:transform hover:scale-105 transition-all duration-300">
+        <div class="relative w-full h-full"
+            style="background-image: url('../src/img/badge_gold.webp'); background-size: auto; background-repeat: no-repeat; background-position: center;">
+            <!-- Rating & Position -->
+            <div class="absolute top-[10%] left-[12%] text-[2rem] font-bold text-black">
+                93
+            </div>
+            <div class="absolute top-[22%] left-[12%] text-[1.2rem] font-bold text-black">
+                RW
+            </div>
 
+            <!-- Player Image -->
+            <div class="absolute top-[15%] left-1/2 transform -translate-x-1/2 w-[80%] h-[50%]">
+                <img src="https://cdn.sofifa.net/players/158/023/25_120.png" class="w-full h-full object-contain"
+                    alt="Lionel Messi">
+            </div>
+
+            <!-- Player Name -->
+            <div class="absolute top-[65%] left-1/2 transform -translate-x-1/2 text-center w-full">
+                <span class="text-black font-bold text-[1rem]">Lionel Messi</span>
+            </div>
+
+            <!-- Stats -->
+            <div class="absolute bottom-[14%] left-[3%] right-[3%] text-[0.8rem] text-black font-medium">
+                <div class="flex justify-between">
+                    <span>PAC</span>
+                    <span>SHO</span>
+                    <span>PAS</span>
+                    <span>DRI</span>
+                    <span>DEF</span>
+                    <span>PHY</span>
+                </div>
+                <div class="flex justify-between font-bold">
+                    <span>85</span>
+                    <span>92</span>
+                    <span>91</span>
+                    <span>95</span>
+                    <span>35</span>
+                    <span>65</span>
+                </div>
+            </div>
+
+            <!-- Country & Club Icons -->
+            <div class="absolute bottom-[5%] left-0 w-full flex justify-center items-center gap-2">
+                <img src="https://cdn.sofifa.net/flags/ar.png" class="w-6 h-4 object-cover" alt="Argentina">
+                <img src="https://cdn.sofifa.net/meta/team/239235/120.png" class="w-6 h-6 object-contain"
+                    alt="Inter Miami">
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
