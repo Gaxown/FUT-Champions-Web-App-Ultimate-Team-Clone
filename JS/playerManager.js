@@ -54,8 +54,11 @@ class PlayerManager {
   }
 }
 
-// Modal functions
-function showAddPlayerModal() {
+// Export a single instance
+export const playerManager = new PlayerManager();
+
+// Export modal functions if needed
+export function showAddPlayerModal() {
   const modal = document.createElement("div");
   modal.className =
     "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
@@ -71,7 +74,7 @@ function showAddPlayerModal() {
   document.body.appendChild(modal);
 }
 
-function showEditPlayerModal(player) {
+export function showEditPlayerModal(player) {
   const modal = document.createElement("div");
   modal.className =
     "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
@@ -87,7 +90,7 @@ function showEditPlayerModal(player) {
   document.body.appendChild(modal);
 }
 
-function confirmDeletePlayer(playerName) {
+export function confirmDeletePlayer(playerName) {
   const modal = document.createElement("div");
   modal.className =
     "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
@@ -105,6 +108,3 @@ function confirmDeletePlayer(playerName) {
     `;
   document.body.appendChild(modal);
 }
-
-// Initialize PlayerManager
-const playerManager = new PlayerManager();

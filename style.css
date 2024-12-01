@@ -31,6 +31,9 @@
 
 .empty-card {
   background-image: url("https://www.futbin.com/design2/img/static/evolutions/placeholder-card-normal.webp");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
   opacity: 0.6;
   pointer-events: auto;
   z-index: 1;
@@ -132,13 +135,13 @@
 }
 
 .valid-position {
-  border: 2px solid #04bc88 !important;
-  box-shadow: 0 0 15px rgba(4, 188, 136, 0.5) !important;
+  border: 2px solid #04bc88;
+  box-shadow: 0 0 15px rgba(4, 188, 136, 0.5);
 }
 
 .invalid-position {
-  border: 2px solid #ff4444 !important;
-  box-shadow: 0 0 15px rgba(255, 68, 68, 0.5) !important;
+  border: 2px solid #ff4444;
+  box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
 }
 
 .warning-position {
@@ -353,7 +356,6 @@
 }
 
 .player-card {
-  /* Add to existing player-card styles */
   cursor: grab;
 }
 
@@ -363,4 +365,58 @@
 
 .empty-card.drag-over {
   border: 2px dashed #04bc88;
+}
+
+img {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-select: none;
+}
+
+/* Bench */
+#bench-container {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: #04bc88 #1a1a1a;
+}
+
+#bench-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+#bench-container::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+#bench-container::-webkit-scrollbar-thumb {
+  background: #04bc88;
+  border-radius: 3px;
+}
+
+.bench-card {
+  position: relative;
+  transform: scale(1);
+  /* transform-origin: top center; */
+  margin: 15px auto;
+  height: 20vh;
+  width: 10vw;
+}
+
+.bench-card.empty-card {
+  /* background: rgba(0, 0, 0, 0.2); */
+}
+
+.bench-card:hover {
+  transform: scale(0.8) !important;
+}
+
+.bench-card.drag-over {
+  transform: scale(0.8) !important;
+}
+
+#bench-container .out-of-position {
+  display: none;
 }
