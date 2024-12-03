@@ -7,7 +7,7 @@ const formationPositions = {
       { x: "80%", y: "12%", position: "RW", role: "Winger", id: "RW_1" },
       {
         x: "50%",
-        y: "1%",
+        y: "0%",
         position: "ST",
         role: "Advanced Forward",
         id: "ST_1",
@@ -233,176 +233,145 @@ function handleDrop(e) {
   const dropTarget = e.target.closest(".player-card");
   if (!dropTarget) return;
 
+  // Clear any drag effects
   document.querySelectorAll(".player-card").forEach((card) => {
     card.classList.remove("drag-over", "valid-position", "invalid-position");
   });
 
+  // Get drag data
   const dragData = JSON.parse(e.dataTransfer.getData("text/plain"));
   const oldPositionId = dragData.positionId;
   const newPositionId = dropTarget.getAttribute("data-position-id");
   const playerName = dragData.playerName;
+
+  // Determine source and target types
   const isBenchSource = oldPositionId.startsWith("bench_");
   const isBenchTarget = newPositionId.startsWith("bench_");
 
-  // Get the player data
+  // Get player object
   const player = playerManager.players.find((p) => p.name === playerName);
   if (!player) return;
 
+  // Get target position and validate if necessary
   const newPosition = dropTarget.getAttribute("data-position") || "BENCH";
   const isValidPos = isBenchTarget
     ? true
     : isValidPosition(player, newPosition);
 
-  // Store original positions and styles
+  // Get target player (if exists)
+  const targetPlayerName = isBenchTarget
+    ? benchPlayers[newPositionId]
+    : selectedPlayers[newPositionId];
+  const targetPlayer = targetPlayerName
+    ? playerManager.players.find((p) => p.name === targetPlayerName)
+    : null;
+
+  // SCENARIO 1: Bench to Bench
+  if (isBenchSource && isBenchTarget) {
+    if (targetPlayer) {
+      // Swap two bench players
+      benchPlayers[newPositionId] = playerName;
+      benchPlayers[oldPositionId] = targetPlayerName;
+    } else {
+      // Move to empty bench slot
+      delete benchPlayers[oldPositionId];
+      benchPlayers[newPositionId] = playerName;
+    }
+  }
+
+  // SCENARIO 2: Pitch to Pitch
+  else if (!isBenchSource && !isBenchTarget) {
+    if (targetPlayer) {
+      // Swap two pitch players
+      selectedPlayers[newPositionId] = playerName;
+      selectedPlayers[oldPositionId] = targetPlayerName;
+    } else {
+      // Move to empty pitch position
+      delete selectedPlayers[oldPositionId];
+      selectedPlayers[newPositionId] = playerName;
+    }
+  }
+
+  // SCENARIO 3: Bench to Pitch
+  else if (isBenchSource && !isBenchTarget) {
+    if (targetPlayer) {
+      // Swap bench player with pitch player
+      const benchPlayer = playerName;
+      const pitchPlayer = targetPlayerName;
+
+      // 2. Clear old positions
+      delete benchPlayers[oldPositionId];
+      delete selectedPlayers[newPositionId];
+
+      // 3. Set new positions
+      selectedPlayers[newPositionId] = benchPlayer; // Bench player goes to pitch
+      benchPlayers[oldPositionId] = pitchPlayer; // Pitch player goes to bench
+    } else {
+      // Move from bench to empty pitch position
+      delete benchPlayers[oldPositionId]; // Remove from bench
+      selectedPlayers[newPositionId] = playerName; // Add to pitch
+    }
+  }
+
+  // SCENARIO 4: Pitch to Bench
+  else if (!isBenchSource && isBenchTarget) {
+    if (targetPlayer) {
+      // Swap pitch player with bench player
+      delete selectedPlayers[oldPositionId];
+      benchPlayers[newPositionId] = playerName;
+      selectedPlayers[oldPositionId] = targetPlayerName;
+      delete benchPlayers[newPositionId];
+    } else {
+      // Move from pitch to empty bench position
+      delete selectedPlayers[oldPositionId];
+      benchPlayers[newPositionId] = playerName;
+    }
+  }
+
+  // Update localStorage
+  localStorage.setItem("selectedPlayers", JSON.stringify(selectedPlayers));
+  localStorage.setItem("benchPlayers", JSON.stringify(benchPlayers));
+
+  // Update UI cards
   const oldCard = document.querySelector(
     `[data-position-id="${oldPositionId}"]`
   );
-  const oldLeft = oldCard.style.left;
-  const oldTop = oldCard.style.top;
-  const targetLeft = dropTarget.style.left;
-  const targetTop = dropTarget.style.top;
-
-  if (isBenchTarget) {
-    const targetPlayerName = benchPlayers[newPositionId];
-    if (targetPlayerName) {
-      // Swap with bench player
-      const targetPlayer = playerManager.players.find(
-        (p) => p.name === targetPlayerName
-      );
-
-      if (isBenchSource) {
-        updateBenchPlayer(targetPlayerName, oldPositionId);
-        updateBenchPlayer(playerName, newPositionId);
-      } else {
-        removePlayerFromPosition(oldPositionId);
-        updateBenchPlayer(playerName, newPositionId);
-        updateBenchPlayer(targetPlayerName, oldPositionId);
-        // Maintain pitch card position
-        oldCard.style.left = oldLeft;
-        oldCard.style.top = oldTop;
-      }
-
-      updateCardWithPlayer(
-        oldCard,
-        targetPlayer,
-        oldCard.getAttribute("data-position"),
-        oldCard.getAttribute("data-role")
-      );
-      updateCardWithPlayer(dropTarget, player, "BENCH", "Substitute");
-    } else {
-      // Move to empty bench slot
-      if (isBenchSource) {
-        removeFromBench(oldPositionId);
-      } else {
-        removePlayerFromPosition(oldPositionId);
-      }
-      updateBenchPlayer(playerName, newPositionId);
-
-      // Clear old position
-      const oldCard = document.querySelector(
-        `[data-position-id="${oldPositionId}"]`
-      );
-      oldCard.className = "player-card empty-card";
-      if (!isBenchSource) {
-        oldCard.innerHTML = `
-          <div class="position-label">${oldCard.getAttribute(
-            "data-position"
-          )}</div>
-          <div class="role-label">${oldCard.getAttribute("data-role")}</div>
-        `;
-      } else {
-        oldCard.innerHTML = `<div class="position-label">BENCH</div>`;
-      }
-
-      // Update new position without absolute positioning for bench
-      dropTarget.style.position = "relative";
-      dropTarget.style.left = dropTarget.style.top = "";
-      updateCardWithPlayer(dropTarget, player, "BENCH", "Substitute");
-    }
+  if (targetPlayer) {
+    updateCardWithPlayer(
+      oldCard,
+      targetPlayer,
+      isBenchSource ? "BENCH" : oldCard.getAttribute("data-position"),
+      isBenchSource ? "Substitute" : oldCard.getAttribute("data-role")
+    );
   } else {
-    const targetPlayerName = selectedPlayers[newPositionId];
-    if (targetPlayerName) {
-      // Swap with pitch player
-      const targetPlayer = playerManager.players.find(
-        (p) => p.name === targetPlayerName
-      );
-
-      if (isBenchSource) {
-        removeFromBench(oldPositionId);
-        updatePlayerPosition(playerName, newPositionId);
-        updateBenchPlayer(targetPlayerName, oldPositionId);
-
-        // Reset bench card to default styling
-        oldCard.className = "player-card empty-card bench-card";
-        oldCard.style.position = "relative";
-        oldCard.style.left = "";
-        oldCard.style.top = "";
-        oldCard.innerHTML = `<div class="position-label">BENCH</div>`;
-      } else {
-        updatePlayerPosition(targetPlayerName, oldPositionId);
-        updatePlayerPosition(playerName, newPositionId);
-        // Maintain original positions
-        oldCard.style.left = oldLeft;
-        oldCard.style.top = oldTop;
-        dropTarget.style.left = targetLeft;
-        dropTarget.style.top = targetTop;
-      }
-
-      updateCardWithPlayer(
-        oldCard,
-        targetPlayer,
-        oldCard.getAttribute("data-position"),
-        oldCard.getAttribute("data-role")
-      );
-      updateCardWithPlayer(
-        dropTarget,
-        player,
-        newPosition,
-        dropTarget.getAttribute("data-role")
-      );
-    } else {
-      // Move to empty pitch position
-      if (isBenchSource) {
-        removeFromBench(oldPositionId);
-        updatePlayerPosition(playerName, newPositionId);
-
-        // Reset bench card to default styling
-        oldCard.className = "player-card empty-card bench-card";
-        oldCard.style.position = "relative";
-        oldCard.style.left = "";
-        oldCard.style.top = "";
-        oldCard.innerHTML = `<div class="position-label">BENCH</div>`;
-      } else {
-        removePlayerFromPosition(oldPositionId);
-        updatePlayerPosition(playerName, newPositionId);
-        // Clear old position while maintaining position
-        oldCard.className = "player-card empty-card";
-        oldCard.style.left = oldLeft;
-        oldCard.style.top = oldTop;
-        oldCard.innerHTML = `
-          <div class="position-label">${oldCard.getAttribute(
-            "data-position"
-          )}</div>
-          <div class="role-label">${oldCard.getAttribute("data-role")}</div>
-        `;
-      }
-
-      // Ensure proper positioning for pitch card
-      dropTarget.style.position = "absolute";
-      updateCardWithPlayer(
-        dropTarget,
-        player,
-        newPosition,
-        dropTarget.getAttribute("data-role")
-      );
-    }
+    // Reset old card to empty
+    oldCard.className = `player-card empty-card${
+      isBenchSource ? " bench-card" : ""
+    }`;
+    oldCard.innerHTML = isBenchSource
+      ? `<div class="position-label">BENCH</div>`
+      : `<div class="position-label">${oldCard.getAttribute(
+          "data-position"
+        )}</div>
+               <div class="role-label">${oldCard.getAttribute(
+                 "data-role"
+               )}</div>`;
   }
+
+  updateCardWithPlayer(
+    dropTarget,
+    player,
+    isBenchTarget ? "BENCH" : newPosition,
+    isBenchTarget ? "Substitute" : dropTarget.getAttribute("data-role")
+  );
 }
 
 function updateCardWithPlayer(card, player, position, role) {
   const isValidPos = isValidPosition(player, position);
-  const isBench = position === "BENCH";
-  card.className = `player-card filled-card ${isBench ? "bench-card" : ""}`;
+  const isBench = card.closest("#bench-container") !== null;
+
+  // Preserve bench-card class if the card is in bench container
+  card.className = `player-card filled-card${isBench ? " bench-card" : ""}`;
 
   card.innerHTML = `
     <div class="card-content">
@@ -411,8 +380,11 @@ function updateCardWithPlayer(card, player, position, role) {
         ${player.rating}
       </div>
       
-      <!-- Position (only show if not bench) -->
-      ${!isBench ? `<div class="position-label">${position}</div>` : ""}
+      <!-- Position -->
+      <div class="position-label">
+        ${isBench ? "BANCH" : position}
+        ${!isBench && !isValidPos ? '<span class="text-red-500">!</span>' : ""}
+      </div>
       
       <!-- Player Image -->
       <div class="absolute top-[12%] left-1/2 transform -translate-x-1/2 w-[80%] h-[52%] z-10">
@@ -427,7 +399,7 @@ function updateCardWithPlayer(card, player, position, role) {
       </div>
 
       <!-- Stats -->
-      <div class="absolute top-[74%] left-1/2 transform -translate-x-1/2 w-[66%] z-10">
+      <div class="absolute top-[73%] left-1/2 transform -translate-x-1/2 w-[80%] z-10">
         ${getPlayerStats(player)}
       </div>
       
@@ -440,17 +412,6 @@ function updateCardWithPlayer(card, player, position, role) {
     player.club
   }">
       </div>
-
-      ${
-        !isValidPos
-          ? `
-        <!-- Out of Position Icon -->
-        <div class="absolute out-of-position bottom-2 left-2 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center z-20">
-          <i class="fas fa-exclamation text-black text-xs"></i>
-        </div>
-      `
-          : ""
-      }
       
       <!-- Background Card -->
       <div class="absolute inset-0 z-0" style="background-image: url('../src/img/badge_gold.webp'); background-size: cover; background-repeat: no-repeat; background-position: center;"></div>
@@ -766,8 +727,12 @@ function showPlayerSelectionModal(position, role, positionId) {
   // Get all players instead of filtering
   const players = playerManager.players;
 
+  // <!-- Position Indicator -->
+  // <div class="absolute -top-2 -right-2 z-10 ${
+  //   isValidPos ? "bg-green-500" : "bg-red-500"
+  // } rounded-full w-4 h-4"></div>
   modal.innerHTML = `
-    <div class="bg-[#1a1a1a] p-6 rounded-lg w-[90%] max-w-4xl max-h-[80vh] overflow-y-auto">
+    <div class="bg-[#1a1a1a] p-6 rounded-lg w-[90%] max-w-5xl max-h-[80vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-white text-xl font-bold">Select Player for ${position}</h2>
         <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
@@ -776,7 +741,7 @@ function showPlayerSelectionModal(position, role, positionId) {
           </svg>
         </button>
       </div>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <div class="flex jsutify-center flex-wrap gap-1">
         ${players
           .map((player) => {
             const isValidPos = isValidPosition(player, position);
@@ -784,21 +749,17 @@ function showPlayerSelectionModal(position, role, positionId) {
             <div class="cursor-pointer relative" onclick="selectPlayerForPosition('${
               player.name
             }', '${position}', '${role}', '${positionId}')">
-              <!-- Position Indicator -->
-              <div class="absolute -top-2 -right-2 z-10 ${
-                isValidPos ? "bg-green-500" : "bg-red-500"
-              } rounded-full w-4 h-4"></div>
               
               <!-- Player card HTML -->
-              <div class="relative w-full h-[300px] ${
+              <div class="relative min-w-[14vw] min-h-[34vh] ${
                 isValidPos ? "" : "opacity-75"
               }" 
-                   style="background-image: url('../src/img/badge_gold.webp'); background-size: auto; background-repeat: no-repeat; background-position: center;">
+                   style="background-image: url('../src/img/badge_gold.webp'); background-size: contain; background-repeat: no-repeat; background-position: center;">
                 <!-- Rating & Position -->
-                <div class="absolute top-[10%] left-[12%] text-[2rem] font-bold text-black">
+                <div class="absolute top-[20%] left-[12%] text-[2rem] font-bold text-black">
                   ${player.rating}
                 </div>
-                <div class="absolute top-[22%] left-[12%] text-[1.2rem] font-bold text-black">
+                <div class="absolute top-[31%] left-[12%] text-[1.2rem] font-bold text-black">
                   ${player.position}
                 </div>
 
@@ -817,12 +778,12 @@ function showPlayerSelectionModal(position, role, positionId) {
                 </div>
 
                 <!-- Stats -->
-                <div class="absolute bottom-[14%] left-[3%] right-[3%] text-[0.8rem] text-black font-medium">
+                <div class="absolute bottom-[17%] left-[13%] text-[0.8rem] text-black font-medium">
                   ${getPlayerStats(player)}
                 </div>
 
                 <!-- Country & Club Icons -->
-                <div class="absolute bottom-[5%] left-0 w-full flex justify-center items-center gap-2">
+                <div class="absolute w-auto top-[43%] left-[14%] w-full flex flex-col justify-center items-center gap-2">
                   <img src="${player.flag}" class="w-6 h-4 object-cover" alt="${
               player.nationality
             }">
@@ -855,7 +816,7 @@ function getPlayerStats(player) {
         <span>SPE</span>
         <span>POS</span>
       </div>
-      <div class="flex justify-between font-bold">
+      <div class="flex justify-between font-bold gap-1">
         <span>${player.skills.diving}</span>
         <span>${player.skills.handling}</span>
         <span>${player.skills.kicking}</span>
@@ -867,7 +828,7 @@ function getPlayerStats(player) {
   }
 
   return `
-    <div class="flex justify-between">
+    <div class="flex justify-between gap-1 text-xs">
       <span>PAC</span>
       <span>SHO</span>
       <span>PAS</span>
@@ -875,7 +836,7 @@ function getPlayerStats(player) {
       <span>DEF</span>
       <span>PHY</span>
     </div>
-    <div class="flex justify-between font-bold">
+    <div class="flex justify-between font-bold gap-1">
       <span>${player.skills.pace}</span>
       <span>${player.skills.shooting}</span>
       <span>${player.skills.passing}</span>
@@ -892,7 +853,13 @@ function selectPlayerForPosition(playerName, position, role, positionId) {
 
   if (player && card) {
     updateCardWithPlayer(card, player, position, role);
-    updatePlayerPosition(player.name, positionId);
+
+    // Update correct localStorage array based on position
+    if (positionId.startsWith("bench_")) {
+      updateBenchPlayer(player.name, positionId);
+    } else {
+      updatePlayerPosition(player.name, positionId);
+    }
   }
 
   // Close the modal
