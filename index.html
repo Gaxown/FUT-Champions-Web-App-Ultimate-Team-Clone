@@ -15,17 +15,8 @@
 
 <body
     class="min-h-screen m-0 font-poppins text-[#1E1E1E] bg-[#CDCDCD] bg-[linear-gradient(to_right,#253f38cc,_#2c7062ea)]">
-    <section class="flex flex-col lg:flex-row gap-8 max-w-[1400px] mx-auto p-5 mt-16">
-        <!-- <button id="addPlayerBtn"
-            class="bg-[#04bc88] hover:bg-[#04bc88]/80 text-white px-4 py-2 rounded-lg flex items-center gap-2 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd"
-                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                    clip-rule="evenodd" />
-            </svg>
-            Add Player
-        </button> -->
-        <div class="lg:w-4/5">
+    <section class="flex flex-col lg:flex-row gap-8 w-full max-w-[1400px] mx-auto p-5 mt-16">
+        <div class="w-full lg:w-4/5">
             <div id="pitch-container">
                 <div class="relative w-full flex justify-center">
                     <svg id="pitch-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 904 650" fill="none"
@@ -60,8 +51,10 @@
                 </div>
             </div>
         </div>
-        <div id="bench-container" class="relative w-full flex mt-4 lg:flex-col lg:w-1/5"></div>
-        <!-- Bench cards will be here -->
+        <div class="w-full lg:w-1/5">
+            <div id="bench-container" class="relative flex flex-row lg:flex-col gap-4">
+                <!-- Bench cards will be here -->
+            </div>
         </div>
     </section>
     <div class="w-[30vw]">
@@ -98,11 +91,10 @@
         lg:grid-cols-4 xl:grid-cols-7 gap-6">
     </div>
 
-    <!-- Add Player Modal Template -->
+    <!-- Add Player Modal -->
     <template id="add-player-modal">
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-[#1a1a1a] p-6 rounded-lg w-full max-w-6xl flex gap-6">
-                <!-- Form Section -->
                 <div class="w-2/3">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-white text-xl font-bold">Add New Player</h2>
@@ -112,7 +104,6 @@
                     </div>
                     <form id="addPlayerForm" class="space-y-4">
                         <div class="grid grid-cols-2 gap-4">
-                            <!-- Basic Info -->
                             <div>
                                 <label class="block text-gray-400 mb-2">Name</label>
                                 <input type="text" name="name" pattern="[A-Za-z\s']+" required
@@ -167,7 +158,6 @@
                             </div>
                         </div>
 
-                        <!-- Regular Player Stats -->
                         <div id="regular-stats">
                             <h3 class="text-white text-lg font-bold mb-3">Player Stats</h3>
                             <div class="grid grid-cols-3 gap-4">

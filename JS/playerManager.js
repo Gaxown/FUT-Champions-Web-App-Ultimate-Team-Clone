@@ -1,63 +1,70 @@
 function createFifaPlayerCard(player) {
   const card = document.createElement("div");
-  card.className =
-    "cursor-pointer relative max-w-[245px] w-[18vw] h-[32vh] bg-cover bg-center";
-  card.style.backgroundImage = "url('../src/img/badge_gold.webp')";
+  card.className = "player-card-container relative";
 
-  const isValidPos = true; // Assuming all positions are valid for display purposes
+  // Add responsive classes
+  card.style.cssText = `
+    width: clamp(140px, 25vw, 220px);
+    height: clamp(175px, 30vw, 275px);
+    background-image: url('../src/img/badge_gold.webp');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  `;
 
-  // <div class="absolute -top-2 -right-2 z-10 ${
-  //   isValidPos ? "bg-green-500" : "bg-red-500"
-  // } rounded-full w-4 h-4"></div>
-
-  // <!-- Player card HTML -->
-  // <div class="relative w-full h-[300px] ${
-  //   isValidPos ? "" : "opacity-75"
-  // }">
   card.innerHTML = `
-        <!-- Position Indicator -->
-            <!-- Rating & Position -->
-            <div class="absolute top-[14%] left-[12%] text-[2rem] font-bold text-black">
-                ${player.rating}
-            </div>
-            <div class="absolute top-[26%] left-[12%] text-[1.2rem] font-bold text-black">
-                ${player.position}
-            </div>
+    <div class="card-content">
+      <!-- Rating -->
+      <div class="absolute rating top-[20%] left-[18%] text-black font-bold" 
+           style="font-size: clamp(16px, 2vw, 24px);">
+        ${player.rating}
+      </div>
+      
+      <!-- Position -->
+      <div class="absolute top-[31%] left-[18%] text-black font-bold"
+           style="font-size: clamp(14px, 1.8vw, 20px);">
+        ${player.position}
+      </div>
 
-            <!-- Player Image -->
-            <div class="absolute top-[15%] left-1/2 transform -translate-x-1/2 w-[80%] h-[50%]">
-                <img src="${
-                  player.photo
-                }" class="w-full h-full object-contain" alt="${player.name}">
-            </div>
+      <!-- Player Image -->
+      <div class="absolute top-[0%] left-1/2 transform -translate-x-1/2 w-[80%] aspect-square">
+        <img src="${player.photo}" class="w-full h-full object-contain" alt="${
+    player.name
+  }">
+      </div>
 
-            <!-- Player Name -->
-            <div class="absolute top-[65%] left-1/2 transform -translate-x-1/2 text-center w-full">
-                <span class="text-black font-bold text-[1.1rem]">${
-                  player.name
-                }</span>
-            </div>
-            <!-- Stats -->
-            <div class="absolute w-[75%] bottom-[13%] left-[13%] text-[0.8rem] text-black font-medium">
-                ${getPlayerStats(player)}
-            </div>
+      <!-- Player Name -->
+      <div class="absolute top-[65%] left-1/2 transform -translate-x-1/2 text-center w-full">
+        <span class="text-black font-bold" style="font-size: clamp(12px, 1.5vw, 18px);">
+          ${player.name}
+        </span>
+      </div>
 
-            <!-- Country & Club Icons -->
-            <div class="absolute bottom-[4%] left-0 w-full flex justify-center items-center gap-2">
-                <img src="${player.flag}" class="w-6 h-4 object-cover" alt="${
+      <!-- Stats -->
+      <div class="absolute bottom-[10%] left-[12%] text-black font-medium"
+           style="font-size: clamp(10px, 1.2vw, 14px); width: 70%;">
+        ${getPlayerStats(player)}
+      </div>
+
+      <!-- Icons -->
+      <div class="absolute w-auto top-[43%] left-[14%] flex flex-col gap-2">
+        <img src="${
+          player.flag
+        }" class="w-[clamp(16px,2vw,24px)] aspect-[4/3] object-cover" alt="${
     player.nationality
   }">
-                <img src="${player.logo}" class="w-6 h-6 object-contain" alt="${
+        <img src="${
+          player.logo
+        }" class="w-[clamp(16px,2vw,24px)] aspect-square object-contain" alt="${
     player.club
   }">
-            </div>
-        </div>
-    `;
+      </div>
+    </div>
+  `;
 
   return card;
 }
 
-// Add this helper function to generate player stats HTML
 function getPlayerStats(player) {
   if (player.position === "GK") {
     return `
@@ -92,7 +99,6 @@ class PlayerManager {
   loadPlayers() {
     const storedPlayers = localStorage.getItem("players");
     if (!storedPlayers) {
-      // Initialize with data from players.json
       fetch("players.json")
         .then((response) => response.json())
         .then((data) => {
@@ -140,10 +146,8 @@ class PlayerManager {
   }
 }
 
-// Export a single instance
 export const playerManager = new PlayerManager();
 
-// Export modal functions if needed
 export function showAddPlayerModal() {
   const template = document.getElementById("add-player-modal");
   const modal = template.content.cloneNode(true);
@@ -155,7 +159,6 @@ export function showAddPlayerModal() {
   const gkStats = document.getElementById("gk-stats");
   const previewCard = document.getElementById("preview-card");
 
-  // Function to update preview
   function updatePreview() {
     const formData = new FormData(form);
     const player = {
@@ -187,13 +190,11 @@ export function showAddPlayerModal() {
             },
     };
 
-    // Update preview card
     previewCard.innerHTML = "";
     const card = createFifaPlayerCard(player);
     previewCard.appendChild(card);
   }
 
-  // Add input event listeners to all form fields
   form.querySelectorAll("input, select").forEach((input) => {
     input.addEventListener("input", updatePreview);
   });
@@ -213,9 +214,13 @@ export function showAddPlayerModal() {
   // Form validation and submission
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+
+    if (!validatePlayerForm(form)) {
+      return;
+    }
+
     const formData = new FormData(form);
 
-    // Create player object
     const player = {
       name: formData.get("name"),
       photo: formData.get("photo"),
@@ -250,7 +255,6 @@ export function showAddPlayerModal() {
     renderAllPlayers();
   });
 
-  // Initialize preview
   updatePreview();
 }
 
@@ -265,7 +269,6 @@ function showEditPlayerModal(player) {
   const gkStats = document.getElementById("gk-stats");
   const previewCard = document.getElementById("preview-card");
 
-  // Pre-fill form fields with player data
   form.querySelector('[name="name"]').value = player.name;
   form.querySelector('[name="photo"]').value = player.photo;
   form.querySelector('[name="position"]').value = player.position;
@@ -275,7 +278,6 @@ function showEditPlayerModal(player) {
   form.querySelector('[name="logo"]').value = player.logo;
   form.querySelector('[name="rating"]').value = player.rating;
 
-  // Fill skills based on position
   if (player.position === "GK") {
     regularStats.classList.add("hidden");
     gkStats.classList.remove("hidden");
@@ -297,12 +299,68 @@ function showEditPlayerModal(player) {
     form.querySelector('[name="physical"]').value = player.skills.physical;
   }
 
-  // Form submission for updating player
+  function updatePreview() {
+    const formData = new FormData(form);
+    const previewPlayer = {
+      name: formData.get("name") || "Player Name",
+      photo: formData.get("photo") || "https://placeholder.com/120",
+      position: formData.get("position") || "ST",
+      nationality: formData.get("nationality") || "Country",
+      flag: formData.get("flag") || "https://placeholder.com/30",
+      club: formData.get("club") || "Club Name",
+      logo: formData.get("logo") || "https://placeholder.com/30",
+      rating: parseInt(formData.get("rating")) || 75,
+      skills:
+        formData.get("position") === "GK"
+          ? {
+              diving: parseInt(formData.get("diving")) || 75,
+              handling: parseInt(formData.get("handling")) || 75,
+              kicking: parseInt(formData.get("kicking")) || 75,
+              reflexes: parseInt(formData.get("reflexes")) || 75,
+              speed: parseInt(formData.get("speed")) || 75,
+              positioning: parseInt(formData.get("positioning")) || 75,
+            }
+          : {
+              pace: parseInt(formData.get("pace")) || 75,
+              shooting: parseInt(formData.get("shooting")) || 75,
+              passing: parseInt(formData.get("passing")) || 75,
+              dribbling: parseInt(formData.get("dribbling")) || 75,
+              defending: parseInt(formData.get("defending")) || 75,
+              physical: parseInt(formData.get("physical")) || 75,
+            },
+    };
+
+    previewCard.innerHTML = "";
+    const card = createFifaPlayerCard(previewPlayer);
+    previewCard.appendChild(card);
+  }
+
+  form.querySelectorAll("input, select").forEach((input) => {
+    input.addEventListener("input", updatePreview);
+  });
+
+  positionSelect.addEventListener("change", (e) => {
+    if (e.target.value === "GK") {
+      regularStats.classList.add("hidden");
+      gkStats.classList.remove("hidden");
+    } else {
+      regularStats.classList.remove("hidden");
+      gkStats.classList.add("hidden");
+    }
+    updatePreview();
+  });
+
+  updatePreview();
+
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+
+    if (!validatePlayerForm(form)) {
+      return; // Stop submission if validation fails
+    }
+
     const formData = new FormData(form);
 
-    // Create updated player object
     const updatedPlayer = {
       name: formData.get("name"),
       photo: formData.get("photo"),
@@ -332,47 +390,37 @@ function showEditPlayerModal(player) {
             },
     };
 
-    // Update player in localStorage
-    // Get current players from localStorage
     let players = JSON.parse(localStorage.getItem("players")) || [];
 
-    // Find and update the player
     const index = players.findIndex((p) => p.name === player.name);
     if (index !== -1) {
       players[index] = updatedPlayer;
 
-      // Update localStorage
       localStorage.setItem("players", JSON.stringify(players));
 
-      // Update any selected or bench players if they exist
       let selectedPlayers =
         JSON.parse(localStorage.getItem("selectedPlayers")) || {};
       let benchPlayers = JSON.parse(localStorage.getItem("benchPlayers")) || {};
 
-      // Update in selectedPlayers if exists
       for (let position in selectedPlayers) {
         if (selectedPlayers[position] === player.name) {
           selectedPlayers[position] = updatedPlayer.name;
         }
       }
 
-      // Update in benchPlayers if exists
       for (let position in benchPlayers) {
         if (benchPlayers[position] === player.name) {
           benchPlayers[position] = updatedPlayer.name;
         }
       }
 
-      // Save updated references
       localStorage.setItem("selectedPlayers", JSON.stringify(selectedPlayers));
       localStorage.setItem("benchPlayers", JSON.stringify(benchPlayers));
     }
 
-    // Close modal and refresh displays
     form.closest(".fixed").remove();
     renderAllPlayers();
 
-    // If you have functions to refresh the pitch and bench displays, call them here
     if (typeof renderPitch === "function") renderPitch();
     if (typeof renderBench === "function") renderBench();
   });
@@ -401,11 +449,10 @@ function deletePlayer(playerName) {
   let players = JSON.parse(localStorage.getItem("players")) || [];
   players = players.filter((player) => player.name !== playerName);
   localStorage.setItem("players", JSON.stringify(players));
-  document.querySelector(".fixed").remove(); // Remove confirmation modal
-  renderAllPlayers(); // Refresh the player list
+  document.querySelector(".fixed").remove();
+  renderAllPlayers();
 }
 
-// Make functions globally available
 window.showEditPlayerModal = showEditPlayerModal;
 window.confirmDeletePlayer = confirmDeletePlayer;
 window.deletePlayer = deletePlayer;
@@ -414,7 +461,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const addPlayerBtn = document.getElementById("addPlayerBtn");
   if (addPlayerBtn) {
     addPlayerBtn.addEventListener("click", showAddPlayerModal);
-    // Render all players
     renderAllPlayers();
   }
 });
@@ -435,14 +481,12 @@ function showPlayerInfoModal(player) {
   modal.className =
     "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
 
-  // Function to get color based on stat value
   const getStatColor = (value) => {
     if (value >= 85) return "bg-green-500";
     if (value >= 70) return "bg-yellow-500";
     return "bg-red-500";
   };
 
-  // Function to create stat bar HTML
   const createStatBar = (label, value) => `
         <div class="mb-2">
             <div class="flex justify-between items-center mb-1">
@@ -458,14 +502,12 @@ function showPlayerInfoModal(player) {
         </div>
     `;
 
-  // Function to get rating color
   const getRatingColor = (rating) => {
     if (rating >= 85) return "text-green-500";
     if (rating >= 70) return "text-yellow-500";
     return "text-red-500";
   };
 
-  // Create stats HTML based on position
   const statsHTML =
     player.position === "GK"
       ? Object.entries({
@@ -569,3 +611,85 @@ function showPlayerInfoModal(player) {
 
   document.body.appendChild(modal);
 }
+
+// Add this validation function
+function validatePlayerForm(form) {
+  const requiredFields = [
+    { name: "name", label: "Player Name" },
+    { name: "photo", label: "Photo URL" },
+    { name: "position", label: "Position" },
+    { name: "nationality", label: "Nationality" },
+    { name: "flag", label: "Flag URL" },
+    { name: "club", label: "Club" },
+    { name: "logo", label: "Club Logo URL" },
+    { name: "rating", label: "Rating" },
+  ];
+
+  // Clear previous error messages
+  form.querySelectorAll(".error-message").forEach((error) => error.remove());
+  form
+    .querySelectorAll(".error-border")
+    .forEach((field) => field.classList.remove("error-border"));
+
+  let isValid = true;
+  const formData = new FormData(form);
+
+  // Validate required fields
+  requiredFields.forEach((field) => {
+    const value = formData.get(field.name);
+    const input = form.querySelector(`[name="${field.name}"]`);
+
+    if (!value || value === "") {
+      isValid = false;
+      addErrorToField(input, `${field.label} is required`);
+    }
+  });
+
+  // Validate stats based on position
+  const position = formData.get("position");
+  const statsFields =
+    position === "GK"
+      ? ["diving", "handling", "kicking", "reflexes", "speed", "positioning"]
+      : ["pace", "shooting", "passing", "dribbling", "defending", "physical"];
+
+  statsFields.forEach((stat) => {
+    const value = formData.get(stat);
+    const input = form.querySelector(`[name="${stat}"]`);
+
+    if (!value || isNaN(value) || value < 0 || value > 99) {
+      isValid = false;
+      addErrorToField(
+        input,
+        `${
+          stat.charAt(0).toUpperCase() + stat.slice(1)
+        } must be between 0 and 99`
+      );
+    }
+  });
+
+  return isValid;
+}
+
+// Helper function to add error messages
+function addErrorToField(input, message) {
+  input.classList.add("error-border");
+  const errorDiv = document.createElement("div");
+  errorDiv.className = "error-message text-red-500 text-sm mt-1";
+  errorDiv.textContent = message;
+  input.parentNode.appendChild(errorDiv);
+}
+
+// Add these styles to your CSS
+const styles = document.createElement("style");
+styles.textContent = `
+  .error-border {
+    border: 2px solid rgb(239, 68, 68) !important;
+  }
+  
+  .error-message {
+    color: rgb(239, 68, 68);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
+`;
+document.head.appendChild(styles);
